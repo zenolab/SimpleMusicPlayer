@@ -20,7 +20,8 @@ public class SongsAdapter extends RecyclerView.Adapter<SongsAdapter.MyViewHolder
 private List<Song> songsList;
 
 
-
+    // класс view holder-а с помощью которого мы получаем ссылку на каждый элемент
+    // отдельного пункта списка
 public class MyViewHolder extends RecyclerView.ViewHolder {
     public TextView title, year, genre;
 
@@ -37,14 +38,18 @@ public class MyViewHolder extends RecyclerView.ViewHolder {
         this.songsList = songsList;
     }
 
+    // Создает новые views (вызывается layout manager-ом)
     @Override
     public SongsAdapter.MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        // create a new view
         View itemView = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.movie_list_row, parent, false);
 
+        // тут можно программно менять атрибуты лэйаута (size, margins, paddings и др.)
         return new SongsAdapter.MyViewHolder(itemView);
     }
 
+    // Заменяет контент отдельного view (вызывается layout manager-ом)
     @Override
     public void onBindViewHolder(SongsAdapter.MyViewHolder holder, int position) {
         Song song = songsList.get(position);
@@ -53,6 +58,7 @@ public class MyViewHolder extends RecyclerView.ViewHolder {
         //holder.year.setText(song.getYear());
     }
 
+    // Возвращает размер данных (вызывается layout manager-ом)
     @Override
     public int getItemCount() {
         return songsList.size();

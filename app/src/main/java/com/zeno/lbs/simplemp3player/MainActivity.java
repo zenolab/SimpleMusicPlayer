@@ -43,7 +43,6 @@ public class MainActivity extends AppCompatActivity {
     //------------------------------
     public static final String LOG_TAG = "Tunes_log";
 
-
     Boolean mExternalStorageAvailable,permission=false;
     String[] items;//to read all files
     public static final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 99;
@@ -67,9 +66,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
-
-
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         //eException: This Activity already has an action bar supplied by the window decor.
         // Do not request Window.FEATURE_SUPPORT_ACTION_BAR and set windowActionBar to false in your theme to use a Toolbar instead.
@@ -92,13 +88,13 @@ public class MainActivity extends AppCompatActivity {
 
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
 
-        //mAdapter = new MoviesAdapter(movieList);
         mAdapter = new SongsAdapter(songList);
 
-        //errror - java.lang.NullPointerException
 
+        // если мы уверены, что изменения в контенте не изменят размер layout-а RecyclerView
+        // передаем параметр true - это увеличивает производительность
         /*
-        void setHasFixedSize (boolean hasFixedSize) - это уаиличения производителности
+        void setHasFixedSize (boolean hasFixedSize) - это увеличения производителности
 
         RecyclerView может выполнять несколько оптимизаций, если он может заранее знать,
         что размер RecyclerView в не зависит от содержимого адаптера.
@@ -108,47 +104,59 @@ public class MainActivity extends AppCompatActivity {
 
          Если использование RecyclerView попадает в эту категорию, установить это правда.
           Это позволит RecyclerView избежать недействительности весь макет при изменении его адаптера содержание.
+
+          Можно использовать android:layout_height="wrap_content" в RecyclerView,
+          который, среди прочего, позволяет CollapsingToolbarLayout знать,
+          что он не должен рушиться, когда RecyclerView пуст.
+          Это работает только при использовании setHasFixedSize(false) в RecylcerView.
+
+          Если вы используете setHasFixedSize(true) в RecyclerView, это поведение,
+          чтобы предотвратить setHasFixedSize(true) CollapsingToolbarLayout, не работает,
+          хотя RecyclerView действительно пуст.
+
          */
+        //SetHasFixedSize (true) означает, что RecyclerView имеет дочерние элементы (элементы) с фиксированной шириной и высотой.
+        // Это позволяет оптимизировать RecyclerView,
+        // вычисляя точную высоту и ширину всего списка на основе вашего адаптера.
+        // setHasFixedSize относится к самому RecyclerView,
+        // а не к размеру каждого адаптированного к нему элемента.!
        // recyclerView.setHasFixedSize(false);
-        recyclerView.setHasFixedSize(true);
+        recyclerView.setHasFixedSize(true); //SetHasFixedSize (true) означает, что RecyclerView имеет дочерние элементы (элементы) с фиксированной шириной и высотой. Это позволяет оптимизировать RecyclerView, вычисляя точную высоту и ширину всего списка на основе вашего адаптера.
+        // используем linear layout manager - управляет и устанавливает планировкой экрана
+        // RecyclerView - он ничего не знает о расположении элементов внутри себя. Эта работа делегирована его LayoutManage
+        // есть 3 стандартных менеджера для создания списка (
+        // -LinearLayoutManager для списков как в ListView,
+        // -GridLayoutManager для плиток,сеток или таблиц
+        // - и StaggeredGridLayoutManager для лэйаута как в Google+
+        // и можно делать custom
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
         recyclerView.setLayoutManager(mLayoutManager);
         recyclerView.addItemDecoration(new DividerItemDecoration(this, LinearLayoutManager.VERTICAL));
-        recyclerView.setItemAnimator(new DefaultItemAnimator());
+        recyclerView.setItemAnimator(new DefaultItemAnimator()); // animations
         recyclerView.setAdapter(mAdapter);
 
+        //custom item listener for RecylerView
         recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), recyclerView, new ClickListener() {
             @Override
             public void onClick(View view, int position) {
-
                 chosenSong(position);
-
-                //##########################################################
             }
-
             @Override
             public void onLongClick(View view, int position) {
-
                 Toast.makeText(getApplicationContext(),  " LongClick !!!", Toast.LENGTH_SHORT).show();
-
-
             }
-        }));
-
-
+        } ));
 
 
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             permission = checkStoragePermission();
         }
         else
-
-            loadList();
+            loadTrackList();
         if(permission){
-
-            loadList();
+            loadTrackList();
         }
-        //========================================
+
     } //--- End onCreate()
 
     //------------------- life cycle---------------
@@ -184,17 +192,11 @@ public class MainActivity extends AppCompatActivity {
         Log.d(LOG_TAG, "MainActivity: onDestroy()");
     }
 
-    //------------------------------------------------
-    public interface ClickListener {
-        void onClick(View view, int position);
-
-        void onLongClick(View view, int position);
-    }
-
 
 
     //===================mp3===========================
 
+    //-----------------load  files------------
     public ArrayList<File> findSong(File root){
         Log.d(LOG_TAG," --- findSong() --");
         ArrayList<File> at = new ArrayList<File>();
@@ -215,6 +217,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+    // not useing for phone memeory - only Sd CARD
     void checkExternalStorage(){
         Log.d(LOG_TAG," --- checkExternalStorage() --");
         String state = Environment.getExternalStorageState();
@@ -233,15 +236,13 @@ public class MainActivity extends AppCompatActivity {
     }
     void handleExternalStorageState() {
         if(mExternalStorageAvailable){
-           // displayList();
-
-            loadList();
-
+            loadTrackList();
         }
         else{
             Toast.makeText(getApplicationContext(),"Please insert an SDcard",Toast.LENGTH_LONG).show();
         }
     }
+    //--------------------------------------------------
 
     //----------------Permission-----------------------
     public boolean checkStoragePermission() {
@@ -288,9 +289,8 @@ public class MainActivity extends AppCompatActivity {
 
     //=================================================
 
-    void loadList(){
+    void loadTrackList(){
 
-      //  void displayList(){
             Log.d(LOG_TAG," --- displayList() --");
             final ArrayList<File> mySongs = findSong(Environment.getExternalStorageDirectory());
             mySongsPlay = mySongs;
@@ -309,6 +309,8 @@ public class MainActivity extends AppCompatActivity {
 
 
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            // notifyDataSetChanged  - работает, только если вы используете add(), insert(), remove() и clear() в адаптере.
+
             // probabaly not needs , сlarefy
             //Сообщите зарегистрированным наблюдателям, что набор данных изменился.
             mAdapter.notifyDataSetChanged();// - Notify any registered observers that the data set has changed. =
@@ -326,7 +328,6 @@ public class MainActivity extends AppCompatActivity {
 
     void chosenSong(int position){
 
-
         Song song = songList.get(position);
         Toast.makeText(getApplicationContext(), song.getTitle() + " is selected!", Toast.LENGTH_SHORT).show();
 
@@ -341,16 +342,20 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(LOG_TAG,"--####### updateSeekBar--########");
                     int runtime = mp.getDuration();
                     int currentPosition = 0;
-                    int adv = 0;
+                    int advance = 0; // progress
                     // делать действие если есть более 2 миллисекунд - трека
-                    while ((adv = ((adv = runtime - currentPosition) < 500) ? adv : 500) > 2) {
-                        // while ((adv = ((adv = runtime - currentPosition) < 100) ? adv : 100) > 2) {
+
+                    // логическоеУсловие ? выражение1 : выражение2
+                    // Если логическоеУсловие равно true, то вычисляется выражение1 и его результат становится результатом выполнения всего оператора.
+                    // Если же логическоеУсловие равно false, то вычисляется выражение2, и его значение становится результатом работы оператора.
+                    while ((advance = ((advance = runtime - currentPosition) < 500) ? advance : 500) > 2) {
+                        // while ((advance = ((advance = runtime - currentPosition) < 100) ? advance : 100) > 2) {
                         try {
                             currentPosition = mp.getCurrentPosition();
                             if (sb != null) {
                                 sb.setProgress(currentPosition);
                             }
-                            sleep(adv);
+                            sleep(advance);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         } catch (IllegalStateException e) {
@@ -373,8 +378,6 @@ public class MainActivity extends AppCompatActivity {
             Log.d(LOG_TAG,"--STOP & release()--");
 
         }
-
-
 
         positionPlay = position;
 
@@ -493,8 +496,16 @@ public class MainActivity extends AppCompatActivity {
         //---------------------------------------------------------------------------
     }
 
+    //------------------------------------------------
+    public interface ClickListener {
+        void onClick(View view, int position);
+
+        void onLongClick(View view, int position);
+    }
 
     //----------------------------------------------------------------------------------------------
+
+    //Using in  Recycler View list for onClick and onLongClick
     public static class RecyclerTouchListener implements RecyclerView.OnItemTouchListener {
 
         private GestureDetector gestureDetector;
@@ -518,6 +529,8 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        //Intercept-перехват
+        // gesture - жест
         @Override
         public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
 
