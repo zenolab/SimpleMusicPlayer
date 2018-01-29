@@ -32,28 +32,44 @@ import com.zeno.lbs.simplemp3player.adapter.SongsAdapter;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import com.zeno.lbs.simplemp3player.MyApplication;
+
+
+import static com.zeno.lbs.simplemp3player.MyApplication.pause;
+import static com.zeno.lbs.simplemp3player.MyApplication.forward;
+import static com.zeno.lbs.simplemp3player.MyApplication.reverse;
+import static com.zeno.lbs.simplemp3player.MyApplication.next;
+import static com.zeno.lbs.simplemp3player.MyApplication.previous;
+
+import static com.zeno.lbs.simplemp3player.MyApplication.mp;
+import static com.zeno.lbs.simplemp3player.MyApplication.sb;
+import static com.zeno.lbs.simplemp3player.MyApplication.positionPlay;
+import static com.zeno.lbs.simplemp3player.MyApplication.mySongsPlay;
+import static com.zeno.lbs.simplemp3player.MyApplication.songList;
 
 public class MainActivity extends AppCompatActivity {
     // private List<Movie> movieList = new ArrayList<>();
-    private List<Song> songList = new ArrayList<>();
+   // private List<Song> songList = new ArrayList<>();
     private RecyclerView recyclerView;
    // private MoviesAdapter mAdapter;
     private SongsAdapter mAdapter;
 
+    Context context;
+
     //------------------------------
     public static final String LOG_TAG = "Tunes_log";
 
-    Boolean mExternalStorageAvailable,permission=false;
-    String[] items;//to read all files
+   // Boolean mExternalStorageAvailable,permission=false;
+   // String[] items;//to read all files
     public static final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 99;
 
     //===============================================
-    static MediaPlayer mp;//assigning memory loc once or else multiple songs will play at once
-    int positionPlay;
-    SeekBar sb;
-    ArrayList<File> mySongsPlay;
+   // static MediaPlayer mp;//assigning memory loc once or else multiple songs will play at once
+   // int positionPlay;
+    //SeekBar sb;
+   // ArrayList<File> mySongsPlay;
     Thread updateSeekBar;
-    Button pause,forward,reverse,next,previous;
+   // Button pause,forward,reverse,next,previous;
 
     TextView textView;
     TextView textName;
@@ -65,6 +81,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        context = this;
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         //eException: This Activity already has an action bar supplied by the window decor.
@@ -139,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), recyclerView, new ClickListener() {
             @Override
             public void onClick(View view, int position) {
-                chosenSong(position);
+                selectedSong(position);
             }
             @Override
             public void onLongClick(View view, int position) {
@@ -149,12 +167,12 @@ public class MainActivity extends AppCompatActivity {
 
 
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            permission = checkStoragePermission();
+            MyApplication.permission = checkStoragePermission();
         }
         else
-            loadTrackList();
-        if(permission){
-            loadTrackList();
+            new FileHelper().loadTrackList();
+        if(MyApplication.permission){
+            new FileHelper().loadTrackList();
         }
 
     } //--- End onCreate()
@@ -170,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         Log.d(LOG_TAG, "MainActivity: onResume()");
-         controlPanel();
+         new ControlCenter(context).controlPanel(pause,forward,previous,next,reverse);
 
     }
 
@@ -191,58 +209,6 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         Log.d(LOG_TAG, "MainActivity: onDestroy()");
     }
-
-
-
-    //===================mp3===========================
-
-    //-----------------load  files------------
-    public ArrayList<File> findSong(File root){
-        Log.d(LOG_TAG," --- findSong() --");
-        ArrayList<File> at = new ArrayList<File>();
-        File[] files = root.listFiles();
-
-        for(File singleFile : files){
-            if(singleFile.isDirectory() && !singleFile.isHidden()){
-                at.addAll(findSong(singleFile));
-            }
-            else{
-                if(singleFile.getName().endsWith(".mp3") || singleFile.getName().endsWith(".wav")){
-                    at.add(singleFile);
-                }
-            }
-        }
-        return at;
-    }
-
-
-
-    // not useing for phone memeory - only Sd CARD
-    void checkExternalStorage(){
-        Log.d(LOG_TAG," --- checkExternalStorage() --");
-        String state = Environment.getExternalStorageState();
-        if (Environment.MEDIA_MOUNTED.equals(state)) {
-            Log.d(LOG_TAG," --- mExternalStorageAvailable = True --");
-            mExternalStorageAvailable = true;
-        } else if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
-            Log.d(LOG_TAG," --- mExternalStorageAvailable = True --");
-            mExternalStorageAvailable = true;
-        } else {
-            mExternalStorageAvailable= false;
-            Log.d(LOG_TAG," --- mExternalStorageAvailable = FALSE --");
-        }
-        handleExternalStorageState();
-
-    }
-    void handleExternalStorageState() {
-        if(mExternalStorageAvailable){
-            loadTrackList();
-        }
-        else{
-            Toast.makeText(getApplicationContext(),"Please insert an SDcard",Toast.LENGTH_LONG).show();
-        }
-    }
-    //--------------------------------------------------
 
     //----------------Permission-----------------------
     public boolean checkStoragePermission() {
@@ -276,7 +242,7 @@ public class MainActivity extends AppCompatActivity {
                     if (ContextCompat.checkSelfPermission(this,
                             android.Manifest.permission.READ_EXTERNAL_STORAGE)
                             == PackageManager.PERMISSION_GRANTED) {
-                        checkExternalStorage();
+                        new FileHelper().checkExternalStorage(MainActivity.this);
                     }
                 } else {
                     Toast.makeText(this, "permission denied",
@@ -287,46 +253,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    //=================================================
 
-    void loadTrackList(){
-
-            Log.d(LOG_TAG," --- displayList() --");
-            final ArrayList<File> mySongs = findSong(Environment.getExternalStorageDirectory());
-            mySongsPlay = mySongs;
-            items = new String[ mySongs.size() ];
-            Song song;
-
-            for(int i=0;i<mySongs.size();i++){
-
-                //toast(mySongs.get(i).getName().toString());
-                //-- without type file
-                // items[i] = mySongs.get(i).getName().toString().replace(".mp3","").replace(".wav","");
-                song = new Song (items[i] = mySongs.get(i).getName().toString());
-                songList.add(song);
-            }
-
-
-
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            // notifyDataSetChanged  - работает, только если вы используете add(), insert(), remove() и clear() в адаптере.
-
-            // probabaly not needs , сlarefy
-            //Сообщите зарегистрированным наблюдателям, что набор данных изменился.
-            mAdapter.notifyDataSetChanged();// - Notify any registered observers that the data set has changed. =
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-          //  ArrayAdapter<String> adp = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,items);
-
-
-
-          //  listView.setAdapter(adp);
-
-
-    }
-
-    void chosenSong(int position){
+    void selectedSong(int position){
 
         Song song = songList.get(position);
         Toast.makeText(getApplicationContext(), song.getTitle() + " is selected!", Toast.LENGTH_SHORT).show();
@@ -334,6 +262,7 @@ public class MainActivity extends AppCompatActivity {
         // все равно может вылелеть если клатцать очень-очень быстро преключение треков,но относитльно вполне годится -- но пака что не вылетает!
         try {
 
+            //!! НЕПРАВИЛЬНО СЧИТАЕТСЯ progressBar
             updateSeekBar = new Thread() {
 
 
@@ -342,6 +271,7 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(LOG_TAG,"--####### updateSeekBar--########");
                     int runtime = mp.getDuration();
                     int currentPosition = 0;
+                    // advance - продвижение
                     int advance = 0; // progress
                     // делать действие если есть более 2 миллисекунд - трека
 
@@ -362,6 +292,29 @@ public class MainActivity extends AppCompatActivity {
                             sb.setProgress(runtime);
                             break;
                         }
+
+                        Log.d(LOG_TAG,"--Track Position  --is ==  "+currentPosition);
+                        Log.e(LOG_TAG,"--Track Position  --is ==  "+runtime);
+                        int remain = runtime-currentPosition;
+                        Log.w(LOG_TAG,"--Track Position  --is ==  "+remain);
+
+                        // из-за того что время текущего может быть минусовое трэе может заранее перейти на следующий
+                        // понять причину почему текщее время может быть с отрецательным интервалом
+                        if(remain <= 0){
+                            //new ControlCenter
+                            //mp.stop(); // E/AndroidRuntime: FATAL EXCEPTION: Thread-3
+                            //sb.setProgress(0);//set to zero,invalidate
+                            mp.release();
+                            positionPlay=((positionPlay+1)%mySongsPlay.size()); // список треков
+                            Uri u = Uri.parse(mySongsPlay.get( positionPlay).toString()); //перейти к конкретному треку
+                            mp = MediaPlayer.create(context,u);
+
+                            //sb.setProgress(0);//set to zero,invalidate
+                            mp.start();
+
+                        }
+                        // воспроизводится но выкидивает варнинг>>
+                        //W/MediaPlayer: Couldn't open /storage/emulated/0/Download/Albir_Musiq_-_Everyday.mp3: java.io.FileNotFoundException: No content provider:
 
                     }
                 }
@@ -416,85 +369,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void controlPanel() {
-        //---------------------------------------------------------------------------
-        sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
 
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                mp.seekTo(seekBar.getProgress());
-                Log.d(LOG_TAG,"-- onStopTrackingTouch --");
-            }
-
-        });
-
-        pause.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sb.setMax(mp.getDuration());
-
-                if(mp.isPlaying()){
-                    pause.setText(">");
-                    mp.pause();
-                }
-                else {
-                    pause.setText("||");
-                    mp.start();
-                }
-
-            }
-        });
-        forward.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sb.setMax(mp.getDuration());
-
-                mp.seekTo(mp.getCurrentPosition()+5000);
-                Log.d(LOG_TAG,"-- pos  +5000 --");
-            }
-        });
-        reverse.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sb.setMax(mp.getDuration());
-
-                mp.seekTo(mp.getCurrentPosition()-5000);
-                Log.d(LOG_TAG,"--pos  -5000 --");
-            }
-        });
-        next.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mp.stop();
-                mp.release();
-                positionPlay=((positionPlay+1)%mySongsPlay.size());
-                Uri u = Uri.parse(mySongsPlay.get( positionPlay).toString());
-                mp = MediaPlayer.create(getApplicationContext(),u);
-                mp.start();
-            }
-        });
-        previous.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mp.stop();
-                mp.release();
-                positionPlay=((positionPlay-1)<0)?(mySongsPlay.size()-1):(positionPlay-1);
-                Uri u = Uri.parse(mySongsPlay.get( positionPlay).toString());//%mysongs so that it do not go to invalid position
-                mp = MediaPlayer.create(getApplicationContext(),u);
-                mp.start();
-            }
-        });
-        //---------------------------------------------------------------------------
-    }
 
     //------------------------------------------------
     public interface ClickListener {
