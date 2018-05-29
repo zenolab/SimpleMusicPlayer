@@ -2,11 +2,17 @@ package com.zeno.lbs.simplemp3player;
 
 //com.zeno.lbs.simplemp3player
 // http://www.androidhive.info/2016/01/android-working-with-recycler-view/
+import android.app.job.JobScheduler;
+import android.content.BroadcastReceiver;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -26,7 +32,9 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.zeno.lbs.simplemp3player.adapter.ClickListener;
 import com.zeno.lbs.simplemp3player.adapter.DividerItemDecoration;
+import com.zeno.lbs.simplemp3player.adapter.RecyclerTouchListener;
 import com.zeno.lbs.simplemp3player.adapter.SongsAdapter;
 
 import java.io.File;
@@ -54,6 +62,8 @@ public class MainActivity extends AppCompatActivity {
    // private MoviesAdapter mAdapter;
     private SongsAdapter mAdapter;
 
+    JobScheduler jobScheduler;
+
     Context context;
 
     //------------------------------
@@ -75,10 +85,21 @@ public class MainActivity extends AppCompatActivity {
     TextView textName;
     TextView textTime;
     //-----------------------------------------------
+    //https://stackoverflow.com/questions/29032029/media-player-should-stop-on-disconnecting-headphone-in-my-android-app-programati?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
+    private BroadcastReceiver mNoisyReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if( mp != null && mp.isPlaying() ) {
+                mp.pause();
+            }
+        }
+    };
+
+
     //------------------------------
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@ Nullable  Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -158,6 +179,16 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view, int position) {
                 selectedSong(position);
+
+                /*
+               // new MyIntentService(context);
+
+                // Запускаем свой IntentService
+                Intent intentMyIntentService = new Intent(MainActivity.this, MyIntentService.class);
+                //startService(intentMyIntentService.putExtra("time", position).putExtra("task",
+                startService(intentMyIntentService.putExtra("time", position));
+                */
+
             }
             @Override
             public void onLongClick(View view, int position) {
@@ -174,6 +205,12 @@ public class MainActivity extends AppCompatActivity {
         if(MyApplication.permission){
             new FileHelper().loadTrackList();
         }
+
+        //---------------------FOR disconnecting headphone
+        //Handles headphones coming unplugged. cannot be done through a manifest receiver
+        IntentFilter filter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
+        registerReceiver(mNoisyReceiver, filter);
+
 
     } //--- End onCreate()
 
@@ -208,6 +245,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         Log.d(LOG_TAG, "MainActivity: onDestroy()");
+        unregisterReceiver(mNoisyReceiver);
     }
 
     //----------------Permission-----------------------
@@ -278,8 +316,8 @@ public class MainActivity extends AppCompatActivity {
                     // логическоеУсловие ? выражение1 : выражение2
                     // Если логическоеУсловие равно true, то вычисляется выражение1 и его результат становится результатом выполнения всего оператора.
                     // Если же логическоеУсловие равно false, то вычисляется выражение2, и его значение становится результатом работы оператора.
-                    while ((advance = ((advance = runtime - currentPosition) < 500) ? advance : 500) > 2) {
-                        // while ((advance = ((advance = runtime - currentPosition) < 100) ? advance : 100) > 2) {
+                   // while ((advance = ((advance = runtime - currentPosition) < 500) ? advance : 500) > 2) {
+                         while ((advance = ((advance = runtime - currentPosition) < 100) ? advance : 100) > 2) {
                         try {
                             currentPosition = mp.getCurrentPosition();
                             if (sb != null) {
@@ -298,9 +336,14 @@ public class MainActivity extends AppCompatActivity {
                         int remain = runtime-currentPosition;
                         Log.w(LOG_TAG,"--Track Position  --is ==  "+remain);
 
-                        // из-за того что время текущего может быть минусовое трэе может заранее перейти на следующий
-                        // понять причину почему текщее время может быть с отрецательным интервалом
-                        if(remain <= 0){
+
+
+                         //-----avto load next
+                        // из-за того что время текущего может быть минусовое трэк может заранее перейти на следующий
+                        // понять причину почему текущеe время может быть с отрецательным интервалом
+                        //if(remain <= 0){
+                        if(remain <= 125){
+                        //if(remain == 0){
                             //new ControlCenter
                             //mp.stop(); // E/AndroidRuntime: FATAL EXCEPTION: Thread-3
                             //sb.setProgress(0);//set to zero,invalidate
@@ -364,66 +407,6 @@ public class MainActivity extends AppCompatActivity {
         updateSeekBar.start();
 
         //----------------------------------------------------------------------------------
-
-
-
-    }
-
-
-
-    //------------------------------------------------
-    public interface ClickListener {
-        void onClick(View view, int position);
-
-        void onLongClick(View view, int position);
-    }
-
-    //----------------------------------------------------------------------------------------------
-
-    //Using in  Recycler View list for onClick and onLongClick
-    public static class RecyclerTouchListener implements RecyclerView.OnItemTouchListener {
-
-        private GestureDetector gestureDetector;
-        private MainActivity.ClickListener clickListener;
-
-        public RecyclerTouchListener(Context context, final RecyclerView recyclerView, final MainActivity.ClickListener clickListener) {
-            this.clickListener = clickListener;
-            gestureDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
-                @Override
-                public boolean onSingleTapUp(MotionEvent e) {
-                    return true;
-                }
-
-                @Override
-                public void onLongPress(MotionEvent e) {
-                    View child = recyclerView.findChildViewUnder(e.getX(), e.getY());
-                    if (child != null && clickListener != null) {
-                        clickListener.onLongClick(child, recyclerView.getChildPosition(child));
-                    }
-                }
-            });
-        }
-
-        //Intercept-перехват
-        // gesture - жест
-        @Override
-        public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
-
-            View child = rv.findChildViewUnder(e.getX(), e.getY());
-            if (child != null && clickListener != null && gestureDetector.onTouchEvent(e)) {
-                clickListener.onClick(child, rv.getChildPosition(child));
-            }
-            return false;
-        }
-
-        @Override
-        public void onTouchEvent(RecyclerView rv, MotionEvent e) {
-        }
-
-        @Override
-        public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
-
-        }
     }
 
 }

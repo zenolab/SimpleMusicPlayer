@@ -3,10 +3,12 @@ package com.zeno.lbs.simplemp3player;
 import android.content.Context;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
+import android.widget.Toast;
 
 import static com.zeno.lbs.simplemp3player.MainActivity.LOG_TAG;
 
@@ -37,7 +39,7 @@ public class ControlCenter {
         sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-
+                       // !!!Try here change posion and displa result!!
             }
 
             @Override
@@ -45,10 +47,19 @@ public class ControlCenter {
 
             }
 
+            @Nullable
             @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                mp.seekTo(seekBar.getProgress());
-                Log.d(LOG_TAG,"-- onStopTrackingTouch --");
+            public void onStopTrackingTouch(@Nullable SeekBar seekBar) {
+                try {
+
+                    mp.seekTo(seekBar.getProgress());
+                    Log.d(LOG_TAG,"-- onStopTrackingTouch --");
+
+                }catch (NullPointerException e){
+                    Toast.makeText(context, "The track not choose",
+                            Toast.LENGTH_LONG).show();
+                }
+
             }
 
         });
@@ -56,16 +67,24 @@ public class ControlCenter {
         pause.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sb.setMax(mp.getDuration());
 
-                if(mp.isPlaying()){
-                    //// local variable pause is accessed from within inner class; needs to be declared final
-                    MyApplication. pause.setText(">");
-                    mp.pause();
-                }
-                else {
-                    MyApplication.pause.setText("||");
-                    mp.start();
+                try{
+
+                    sb.setMax(mp.getDuration());
+
+                    if(mp.isPlaying()){
+                        //// local variable pause is accessed from within inner class; needs to be declared final
+                        MyApplication. pause.setText(">");
+                        mp.pause();
+                    }
+                    else {
+                        MyApplication.pause.setText("||");
+                        mp.start();
+                    }
+
+                }catch(NullPointerException e){
+                    Toast.makeText(context, "The track not choose",
+                            Toast.LENGTH_LONG).show();
                 }
 
             }
