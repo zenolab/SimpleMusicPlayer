@@ -20,14 +20,6 @@
             </intent-filter>
         </activity>
 
-        <service
-            android:name=".MyIntentService"
-            android:exported="false" />
-
-        <receiver
-            android:name=".NoisyAudioStreamReceiver"
-            android:enabled="true"
-            android:exported="true"></receiver>
     </application>
 
 </manifest>

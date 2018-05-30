@@ -21,8 +21,6 @@ import static com.zeno.lbs.simplemp3player.MyApplication.mySongsPlay;
 public class FileHelper {
 
     String[] items;//to read all files
-   // ArrayList<File> mySongsPlay;
-
 
     //-----------------load  files------------
     public ArrayList<File> findSong(File root){
@@ -84,28 +82,11 @@ public class FileHelper {
 
         for(int i=0;i<mySongs.size();i++){
 
-            //toast(mySongs.get(i).getName().toString());
             //-- without type file
             // items[i] = mySongs.get(i).getName().toString().replace(".mp3","").replace(".wav","");
             song = new Song (items[i] = mySongs.get(i).getName().toString());
             songList.add(song);
         }
-
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        // notifyDataSetChanged  - работает, только если вы используете add(), insert(), remove() и clear() в адаптере.
-
-        // probabaly not needs , сlarefy
-        //Сообщите зарегистрированным наблюдателям, что набор данных изменился.
-        // ----> mAdapter.notifyDataSetChanged();// - Notify any registered observers that the data set has changed. =
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-        //  ArrayAdapter<String> adp = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,items);
-
-
-
-        //  listView.setAdapter(adp);
-
 
     }
 
