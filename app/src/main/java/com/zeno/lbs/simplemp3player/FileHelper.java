@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import static com.zeno.lbs.simplemp3player.MainActivity.LOG_TAG;
 import static com.zeno.lbs.simplemp3player.MyApplication.songList;
 
-import com.zeno.lbs.simplemp3player.MyApplication;
 import static com.zeno.lbs.simplemp3player.MyApplication.mySongsPlay;
 
 /**
@@ -20,20 +19,16 @@ import static com.zeno.lbs.simplemp3player.MyApplication.mySongsPlay;
 
 public class FileHelper {
 
-    String[] items;//to read all files
+    private String[] items;
 
-    //-----------------load  files------------
-    public ArrayList<File> findSong(File root){
-        Log.d(LOG_TAG," --- findSong() --");
+    private ArrayList<File> findSong(File root) {
         ArrayList<File> at = new ArrayList<File>();
         File[] files = root.listFiles();
-
-        for(File singleFile : files){
-            if(singleFile.isDirectory() && !singleFile.isHidden()){
+        for (File singleFile : files) {
+            if (singleFile.isDirectory() && !singleFile.isHidden()) {
                 at.addAll(findSong(singleFile));
-            }
-            else{
-                if(singleFile.getName().endsWith(".mp3") || singleFile.getName().endsWith(".wav")){
+            } else {
+                if (singleFile.getName().endsWith(".mp3") || singleFile.getName().endsWith(".wav")) {
                     at.add(singleFile);
                 }
             }
@@ -41,50 +36,34 @@ public class FileHelper {
         return at;
     }
 
-
-
-    // not useing for phone memeory - only Sd CARD
-    void checkExternalStorage(Context context){
-        Log.d(LOG_TAG," --- checkExternalStorage() --");
+    void checkExternalStorage(Context context) {
         String state = Environment.getExternalStorageState();
         if (Environment.MEDIA_MOUNTED.equals(state)) {
-            Log.d(LOG_TAG," --- mExternalStorageAvailable = True --");
             MyApplication.mExternalStorageAvailable = true;
         } else if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
-            Log.d(LOG_TAG," --- mExternalStorageAvailable = True --");
             MyApplication.mExternalStorageAvailable = true;
         } else {
-            MyApplication.mExternalStorageAvailable= false;
-            Log.d(LOG_TAG," --- mExternalStorageAvailable = FALSE --");
+            MyApplication.mExternalStorageAvailable = false;
         }
         handleExternalStorageState(context);
 
     }
+
     void handleExternalStorageState(Context context) {
-        if(MyApplication.mExternalStorageAvailable){
+        if (MyApplication.mExternalStorageAvailable) {
             loadTrackList();
-        }
-        else{
-            Toast.makeText(context,"Please insert an SDcard",Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(context, "Please insert an SDcard", Toast.LENGTH_LONG).show();
         }
     }
-    //--------------------------------------------------
 
-
-    void loadTrackList(){
-
-        Log.d(LOG_TAG," --- displayList() --");
+    void loadTrackList() {
         final ArrayList<File> mySongs = findSong(Environment.getExternalStorageDirectory());
-        //MyApplication.mySongsPlay = mySongs;
         mySongsPlay = mySongs;
-        items = new String[ mySongs.size() ];
+        items = new String[mySongs.size()];
         Song song;
-
-        for(int i=0;i<mySongs.size();i++){
-
-            //-- without type file
-            // items[i] = mySongs.get(i).getName().toString().replace(".mp3","").replace(".wav","");
-            song = new Song (items[i] = mySongs.get(i).getName().toString());
+        for (int i = 0; i < mySongs.size(); i++) {
+            song = new Song(items[i] = mySongs.get(i).getName().toString());
             songList.add(song);
         }
 

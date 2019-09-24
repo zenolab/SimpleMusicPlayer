@@ -12,7 +12,6 @@ import android.widget.Toast;
 
 import static com.zeno.lbs.simplemp3player.MainActivity.LOG_TAG;
 
-
 import static com.zeno.lbs.simplemp3player.MyApplication.mp;
 import static com.zeno.lbs.simplemp3player.MyApplication.mySongsPlay;
 import static com.zeno.lbs.simplemp3player.MyApplication.positionPlay;
@@ -26,20 +25,15 @@ public class ControlCenter {
 
     Context context;
 
-    public ControlCenter(Context context) {
+    ControlCenter(Context context) {
         this.context = context;
     }
 
-
-
-    // local variable pause is accessed from within inner class; needs to be declared final
-   // void controlPanel(final Button pause,Button forward,Button previous,Button next,Button reverse) {
-    void controlPanel( Button pause,Button forward,Button previous,Button next,Button reverse) {
-        //---------------------------------------------------------------------------
+    void controlPanel(Button pause, Button forward, Button previous, Button next, Button reverse) {
         sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                       // !!!Try here change posion and displa result!!
+
             }
 
             @Override
@@ -53,13 +47,12 @@ public class ControlCenter {
                 try {
 
                     mp.seekTo(seekBar.getProgress());
-                    Log.d(LOG_TAG,"-- onStopTrackingTouch --");
+                    Log.d(LOG_TAG, "-- onStopTrackingTouch --");
 
-                }catch (NullPointerException e){
+                } catch (NullPointerException e) {
                     Toast.makeText(context, "The track not choose",
                             Toast.LENGTH_LONG).show();
                 }
-
             }
 
         });
@@ -67,26 +60,19 @@ public class ControlCenter {
         pause.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                try{
-
+                try {
                     sb.setMax(mp.getDuration());
-
-                    if(mp.isPlaying()){
-                        //// local variable pause is accessed from within inner class; needs to be declared final
-                        MyApplication. pause.setText(">");
+                    if (mp.isPlaying()) {
+                        MyApplication.pause.setText(">");
                         mp.pause();
-                    }
-                    else {
+                    } else {
                         MyApplication.pause.setText("||");
                         mp.start();
                     }
-
-                }catch(NullPointerException e){
+                } catch (NullPointerException e) {
                     Toast.makeText(context, "The track not choose",
                             Toast.LENGTH_LONG).show();
                 }
-
             }
         });
         forward.setOnClickListener(new View.OnClickListener() {
@@ -94,8 +80,8 @@ public class ControlCenter {
             public void onClick(View v) {
                 sb.setMax(mp.getDuration());
 
-                mp.seekTo(mp.getCurrentPosition()+5000);
-                Log.d(LOG_TAG,"-- pos  +5000 --");
+                mp.seekTo(mp.getCurrentPosition() + 5000);
+                Log.d(LOG_TAG, "+5000");
             }
         });
         reverse.setOnClickListener(new View.OnClickListener() {
@@ -103,8 +89,8 @@ public class ControlCenter {
             public void onClick(View v) {
                 sb.setMax(mp.getDuration());
 
-                mp.seekTo(mp.getCurrentPosition()-5000);
-                Log.d(LOG_TAG,"--pos  -5000 --");
+                mp.seekTo(mp.getCurrentPosition() - 5000);
+                Log.d(LOG_TAG, "-5000");
             }
         });
         next.setOnClickListener(new View.OnClickListener() {
@@ -112,9 +98,9 @@ public class ControlCenter {
             public void onClick(View v) {
                 mp.stop();
                 mp.release();
-                positionPlay=((positionPlay+1)%mySongsPlay.size());
-                Uri u = Uri.parse(mySongsPlay.get( positionPlay).toString());
-                mp = MediaPlayer.create(context,u);
+                positionPlay = ((positionPlay + 1) % mySongsPlay.size());
+                Uri u = Uri.parse(mySongsPlay.get(positionPlay).toString());
+                mp = MediaPlayer.create(context, u);
                 mp.start();
             }
         });
@@ -123,15 +109,11 @@ public class ControlCenter {
             public void onClick(View v) {
                 mp.stop();
                 mp.release();
-                positionPlay=((positionPlay-1)<0)?(mySongsPlay.size()-1):(positionPlay-1);
-                Uri u = Uri.parse(mySongsPlay.get( positionPlay).toString());//%mysongs so that it do not go to invalid position
-                mp = MediaPlayer.create(context,u);
-
-                //my
-                //sb.setProgress(0);//set to zero,invalidate
+                positionPlay = ((positionPlay - 1) < 0) ? (mySongsPlay.size() - 1) : (positionPlay - 1);
+                Uri u = Uri.parse(mySongsPlay.get(positionPlay).toString());
+                mp = MediaPlayer.create(context, u);
                 mp.start();
             }
         });
-        //---------------------------------------------------------------------------
     }
 }

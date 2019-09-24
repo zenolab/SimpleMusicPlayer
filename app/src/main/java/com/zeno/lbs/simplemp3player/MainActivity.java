@@ -2,6 +2,7 @@ package com.zeno.lbs.simplemp3player;
 
 //com.zeno.lbs.simplemp3player
 // http://www.androidhive.info/2016/01/android-working-with-recycler-view/
+
 import android.app.job.JobScheduler;
 import android.content.BroadcastReceiver;
 import android.content.Intent;
@@ -40,6 +41,7 @@ import com.zeno.lbs.simplemp3player.adapter.SongsAdapter;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+
 import com.zeno.lbs.simplemp3player.MyApplication;
 
 
@@ -60,41 +62,25 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private SongsAdapter mAdapter;
 
-    Context context;
+    private Context context;
 
-    //------------------------------
-    public static final String LOG_TAG = "Tunes_log";
-
-   // Boolean mExternalStorageAvailable,permission=false;
-   // String[] items;//to read all files
-    public static final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 99;
-
-    //===============================================
-
-    Thread updateSeekBar;
-   // Button pause,forward,reverse,next,previous;
-
-    TextView textView;
-    TextView textName;
-    TextView textTime;
-    //-----------------------------------------------
-    //Handles headphones coming unplugged.
-    // cannot be done through a manifest receiver
-    //https://stackoverflow.com/questions/29032029/media-player-should-stop-on-disconnecting-headphone-in-my-android-app-programati?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
+    private static final String LOG_TAG = "Tunes_log";
+    private static final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 99;
+    private Thread updateSeekBar;
+    private TextView textView;
+    private TextView textName;
+    private TextView textTime;
     private BroadcastReceiver mNoisyReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if( mp != null && mp.isPlaying() ) {
+            if (mp != null && mp.isPlaying()) {
                 mp.pause();
             }
         }
     };
 
-
-    //------------------------------
-
     @Override
-    protected void onCreate(@ Nullable  Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -103,20 +89,15 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-
-        //=================**** mp3 ****===================
-        //===================================
         textTime = (TextView) findViewById(R.id.songTime);
         textName = (TextView) findViewById(R.id.text);
 
-
-        pause = (Button)findViewById(R.id.pause);
-        forward = (Button)findViewById(R.id.forward);
-        previous = (Button)findViewById(R.id.previous);
-        next = (Button)findViewById(R.id.next);
-        reverse = (Button)findViewById(R.id.reverse);
-        sb=(SeekBar)findViewById(R.id.seekBar);
-        //===================================
+        pause = (Button) findViewById(R.id.pause);
+        forward = (Button) findViewById(R.id.forward);
+        previous = (Button) findViewById(R.id.previous);
+        next = (Button) findViewById(R.id.next);
+        reverse = (Button) findViewById(R.id.reverse);
+        sb = (SeekBar) findViewById(R.id.seekBar);
 
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         mAdapter = new SongsAdapter(songList);
@@ -128,74 +109,45 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setItemAnimator(new DefaultItemAnimator()); // animations
         recyclerView.setAdapter(mAdapter);
 
-        //custom item listener for RecylerView
-        recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), recyclerView, new ClickListener() {
+        recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(),
+                recyclerView, new ClickListener() {
             @Override
             public void onClick(View view, int position) {
                 selectedSong(position);
 
             }
+
             @Override
             public void onLongClick(View view, int position) {
-                Toast.makeText(getApplicationContext(),  " LongClick !!!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), " LongClick !!!", Toast.LENGTH_SHORT).show();
             }
-        } ));
+        }));
 
 
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             MyApplication.permission = checkStoragePermission();
-        }
-        else
+        } else
             new FileHelper().loadTrackList();
-        if(MyApplication.permission){
+        if (MyApplication.permission) {
             new FileHelper().loadTrackList();
         }
-
-        //---------------------FOR disconnecting headphone
-        //Handles headphones coming unplugged. cannot be done through a manifest receiver
         IntentFilter filter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
         registerReceiver(mNoisyReceiver, filter);
-
-
-    } //--- End onCreate()
-
-    //------------------- life cycle---------------
-    @Override
-    protected void onStart() {
-        super.onStart();
-        Log.d(LOG_TAG, "MainActivity: onStart()");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d(LOG_TAG, "MainActivity: onResume()");
-         new ControlCenter(context).controlPanel(pause,forward,previous,next,reverse);
-
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        Log.d(LOG_TAG, "MainActivity: onPause()");
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        Log.d(LOG_TAG, "MainActivity: onStop()");
+        new ControlCenter(context).controlPanel(pause, forward, previous, next, reverse);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Log.d(LOG_TAG, "MainActivity: onDestroy()");
         unregisterReceiver(mNoisyReceiver);
     }
 
-    //----------------Permission-----------------------
     public boolean checkStoragePermission() {
-
         if (ContextCompat.checkSelfPermission(this,
                 android.Manifest.permission.READ_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -213,8 +165,8 @@ public class MainActivity extends AppCompatActivity {
         } else {
             return true;
         }
-
     }
+
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            String permissions[], int[] grantResults) {
@@ -236,24 +188,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-    void selectedSong(int position){
-
+    void selectedSong(int position) {
         Song song = songList.get(position);
         Toast.makeText(getApplicationContext(), song.getTitle() + " is selected!", Toast.LENGTH_SHORT).show();
         try {
-
             updateSeekBar = new Thread() {
 
 
                 @Override
                 public void run() {
-                    Log.d(LOG_TAG,"--####### updateSeekBar--########");
                     int runtime = mp.getDuration();
                     int currentPosition = 0;
-                    // advance - продвижение
-                    int advance = 0; // progress
-                         while ((advance = ((advance = runtime - currentPosition) < 100) ? advance : 100) > 2) {
+                    int advance = 0;
+                    while ((advance = ((advance = runtime - currentPosition) < 100) ? advance : 100) > 2) {
                         try {
                             currentPosition = mp.getCurrentPosition();
                             if (sb != null) {
@@ -266,56 +213,33 @@ public class MainActivity extends AppCompatActivity {
                             sb.setProgress(runtime);
                             break;
                         }
-
-                        Log.d(LOG_TAG,"--Track Position  --is ==  "+currentPosition);
-                        Log.e(LOG_TAG,"--Track Position  --is ==  "+runtime);
-                        int remain = runtime-currentPosition;
-                        Log.w(LOG_TAG,"--Track Position  --is ==  "+remain);
-
-                         //-----avto load next
-                        if(remain <= 175){
+                        int remain = runtime - currentPosition;
+                        if (remain <= 175) {
                             mp.release();
-                            positionPlay=((positionPlay+1)%mySongsPlay.size()); // список треков
-                            Uri u = Uri.parse(mySongsPlay.get( positionPlay).toString()); //перейти к конкретному треку
-                            mp = MediaPlayer.create(context,u);
+                            positionPlay = ((positionPlay + 1) % mySongsPlay.size());
+                            Uri u = Uri.parse(mySongsPlay.get(positionPlay).toString());
+                            mp = MediaPlayer.create(context, u);
                             mp.start();
-
                         }
-
                     }
                 }
             };
-
         } catch (Exception exception) {
-            Log.d(LOG_TAG,"--Fall out Exception -- "+exception.getMessage());
+            throw new RuntimeException("Cannot selected track"+exception.getMessage());
         }
 
-        //----------------------------------------------------------------------------------
-        if(mp != null){
+        if (mp != null) {
             mp.stop();
             mp.release();
-            Log.d(LOG_TAG,"--STOP & release()--");
-
         }
-
         positionPlay = position;
-        Uri u = Uri.parse(mySongsPlay.get(position).toString()); // java.lang.IndexOutOfBoundsException: Index: 15, Size: 12  -- Out Of Bounds  - За границами
-
-        Log.d(LOG_TAG,"--Uri.parse -- " + u);
-        textName.setText("One "+ mySongsPlay.get(position).toString());
-
-
-        mp = MediaPlayer.create(getApplicationContext(),u);
-        Log.d(LOG_TAG,"--MediaPlayer.CREATE--");
-
+        Uri u = Uri.parse(mySongsPlay.get(position).toString());
+        textName.setText("One " + mySongsPlay.get(position).toString());
+        mp = MediaPlayer.create(getApplicationContext(), u);
         mp.start();
-
-        textTime.setText(""+mp.getDuration());
-
+        textTime.setText("" + mp.getDuration());
         sb.setMax(mp.getDuration());
         updateSeekBar.start();
-
-        //----------------------------------------------------------------------------------
     }
 
 }

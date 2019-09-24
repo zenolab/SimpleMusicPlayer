@@ -6,8 +6,6 @@ package com.zeno.lbs.simplemp3player;
 
 public class Song {
 
-
-   // private String title, genre, year;
     private String title;
 
     public Song() {
